@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Data</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f0f8ff;
+            /* Light blue background */
+        }
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+            padding: 20px 0;
+            background-color: #f0f8ff;
+        }
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .add-button,
+        .back-button {
+            display: block;
+            margin-top: 20px;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+            background-color: #007bff;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .add-button:hover,
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-button {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Medical Data</h1>
+    <table id="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Address</th>
+                <th>National ID</th>
+                <th>Diagnosis</th>
+                <th>Treatment</th>
+                <th>Allergies</th>
+                <th>Immunizations</th>
+                <th>Family History</th>
+                <th>Action</th> <!-- Added column for delete button -->
+            </tr>
+        </thead>
+        <tbody id="data-list">
+            <!-- Data will be displayed here dynamically -->
+        </tbody>
+    </table>
+    <a href="/add" class="add-button">Add Data</a>
+    <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Event listener for the delete button
+            document.addEventListener('click', function (event) {
+                if (event.target.classList.contains('delete-button')) {
+                    const nationalId = event.target.getAttribute('data-national-id');
+                    if (nationalId) {
+                        deleteData(nationalId);
+                    }
+                }
+            });
+
+            // Function to fetch and display data
+            function fetchData() {
+                fetch('http://localhost:8000/combined_data/')
+                    .then(response => response.json())
+                    .then(data => {
+                        const dataTable = document.getElementById('data-list');
+                        dataTable.innerHTML = ''; // Clear previous data
+
+                        data.forEach(item => {
+                            const row = dataTable.insertRow();
+
+                            const columns = [
+                                'name', 'age', 'address', 'national_id',
+                                'diagnosis', 'treatment', 'allergies',
+                                'immunizations', 'family_history'
+                            ];
+
+                            columns.forEach(column => {
+                                const cell = row.insertCell();
+                                cell.textContent = item[column];
+                            });
+
+                            // Add delete button
+                            const deleteCell = row.insertCell();
+                            const deleteButton = document.createElement('button');
+                            deleteButton.textContent = 'Delete';
+                            deleteButton.className = 'delete-button';
+                            deleteButton.setAttribute('data-national-id', item.national_id); // Set data-national-id attribute
+                            deleteCell.appendChild(deleteButton);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            }
+
+            // Call the fetchData function on page load
+            fetchData();
+
+            // Event listener for the "Add Data" form submission
+            const addForm = document.getElementById('add-form');
+            if (addForm) {
+                addForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    const formData = new FormData(addForm);
+                    const jsonData = {};
+
+                    formData.forEach((value, key) => {
+                        jsonData[key] = value;
+                    });
+
+                    fetch('http://localhost:8000/combined_data/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(jsonData),
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert('Medical record added successfully!');
+                            fetchData(); // Refresh the displayed data on the main page
+                        })
+                        .catch(error => console.error('Error adding data:', error));
+                });
+            }
+
+            // Function to delete data
+            function deleteData(nationalId) {
+                fetch(`http://localhost:8000/combined_data/${nationalId}`, {
+                    method: 'DELETE',
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('Medical record deleted successfully!');
+                        fetchData(); // Refresh the displayed data on the main page
+                    })
+                    .catch(error => console.error('Error deleting data:', error));
+            }
+        });
+    </script>
+</body>
+
+</html>
